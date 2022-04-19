@@ -61,7 +61,7 @@ def proform_import() :
     return runners
 
 #%% today function
-def atr_today(base_url, left_books, right_books, runners) :
+def atr_today() :
     base_url = 'https://www.attheraces.com/racecard/'
     left_books = ['bet365', 'will_hill', 'lads', 'pp', 'coral', 'unibet', 'sport888', 'betfairsb', 'sts', 'tote']
     right_books = ['betfred', 'betvictor', 'boylesports', 'sportnation', 'parimatch', 'betway', 'fansbet', 'grosvenor', 'spreadex', 'skybet', 'quinnbet', 'matchbook', 'smarkets', 'bfex']
@@ -80,8 +80,9 @@ def atr_today(base_url, left_books, right_books, runners) :
     first = True
 
     date = pd.Timestamp.now()
-
+    
     fut_runners = runners
+    fut_runners.crse_name.replace('Epsom', 'Epsom Downs', inplace=True)
     fut_runners = fut_runners[(fut_runners.race_datetime > date) & (fut_runners.race_datetime < (date.normalize() + pd.DateOffset(days=1)))]
     fut_crses = fut_runners.drop_duplicates(subset='crse_name').drop(columns=['race_id', 'horse_id', 'horse_name']).reset_index(drop=True)
     fut_crses['adj_crse_name'] = fut_crses.crse_name.replace(' ', '-', regex=True)
@@ -187,6 +188,7 @@ def atr_today(base_url, left_books, right_books, runners) :
                 odds_grid = odds_grid.append(race_grid, ignore_index=True)
         
         odds_grid['med_odds'] = odds_grid.median(axis = 1)
+        odds_grid.crse_name.replace('Epsom Downs', 'Epsom', inplace=True)
         feather.write_feather(odds_grid, '../output/' + date.strftime('%Y-%m-%d') + '_atr_odds' + pd.Timestamp.now().strftime('%d-%H-%M') + '.ftr')
     
     driver.close()
@@ -217,6 +219,7 @@ def atr_tomorrow() :
     date = (pd.Timestamp.now() + pd.DateOffset(days=1)).normalize()
 
     fut_runners = runners
+    fut_runners.crse_name.replace('Epsom', 'Epsom Downs', inplace=True)
     fut_runners = fut_runners[(fut_runners.race_datetime > date) & (fut_runners.race_datetime < (date.normalize() + pd.DateOffset(days=1)))]
     fut_crses = fut_runners.drop_duplicates(subset='crse_name').drop(columns=['race_id', 'horse_id', 'horse_name']).reset_index(drop=True)
     fut_crses['adj_crse_name'] = fut_crses.crse_name.replace(' ', '-', regex=True)
@@ -322,6 +325,7 @@ def atr_tomorrow() :
                 odds_grid = odds_grid.append(race_grid, ignore_index=True)
                 
         odds_grid['med_odds'] = odds_grid.median(axis = 1)
+        odds_grid.crse_name.replace('Epsom Downs', 'Epsom', inplace=True)
         feather.write_feather(odds_grid, '../output/' + date.strftime('%Y-%m-%d') + '_atr_odds' + pd.Timestamp.now().strftime('%d-%H-%M') + '.ftr')
              
     driver.close()
@@ -346,29 +350,17 @@ warnings.filterwarnings("ignore")
 schedule.CancelJob
 
 schedule.every().day.at("08:00").do(atr_today)
-schedule.every().day.at("08:30").do(atr_today)
 schedule.every().day.at("09:00").do(atr_today)
-schedule.every().day.at("09:30").do(atr_today)
 schedule.every().day.at("10:00").do(atr_today)
-schedule.every().day.at("10:30").do(atr_today)
 schedule.every().day.at("11:00").do(atr_today)
-schedule.every().day.at("11:30").do(atr_today)
 schedule.every().day.at("12:00").do(atr_today)
-schedule.every().day.at("12:30").do(atr_today)
 schedule.every().day.at("13:00").do(atr_today)
-schedule.every().day.at("13:30").do(atr_today)
 schedule.every().day.at("14:00").do(atr_today)
-schedule.every().day.at("14:30").do(atr_today)
 schedule.every().day.at("15:00").do(atr_today)
-schedule.every().day.at("15:30").do(atr_today)
 schedule.every().day.at("16:00").do(atr_today)
-schedule.every().day.at("16:30").do(atr_today)
 schedule.every().day.at("17:00").do(atr_today)
-schedule.every().day.at("17:30").do(atr_today)
 schedule.every().day.at("18:00").do(atr_today)
-schedule.every().day.at("18:30").do(atr_today)
 schedule.every().day.at("19:00").do(atr_today)
-schedule.every().day.at("19:30").do(atr_today)
 
 schedule.every().day.at("16:00").do(atr_tomorrow)
 schedule.every().day.at("17:00").do(atr_tomorrow)
