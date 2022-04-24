@@ -92,6 +92,9 @@ def atr_today() :
     if len(fut_crses) > 0 :
         crses = fut_crses.reset_index(drop=True)
         for j in crses.index :
+            driver.close()
+            driver = webdriver.Chrome()
+            first = True
             crse_races = fut_runners[fut_runners.crse_name == crses.crse_name[j]].drop_duplicates(subset='race_id').reset_index(drop=True)
             for k in crse_races.index :
                 horse_grid = pd.DataFrame(columns=horse_columns)
@@ -186,6 +189,7 @@ def atr_today() :
                 race_grid[right_books] = right_grid
                 
                 odds_grid = odds_grid.append(race_grid, ignore_index=True)
+                
         
         odds_grid['med_odds'] = odds_grid.median(axis = 1)
         odds_grid.crse_name.replace('Epsom Downs', 'Epsom', inplace=True)
@@ -229,6 +233,9 @@ def atr_tomorrow() :
     if len(fut_crses) > 0 :
         crses = fut_crses.reset_index(drop=True)
         for j in crses.index :
+            driver.close()
+            driver = webdriver.Chrome()
+            first = True
             crse_races = fut_runners[fut_runners.crse_name == crses.crse_name[j]].drop_duplicates(subset='race_id').reset_index(drop=True)
             for k in crse_races.index :
                 horse_grid = pd.DataFrame(columns=horse_columns)
@@ -334,7 +341,6 @@ def atr_tomorrow() :
     print(pd.Timestamp.now())
     return
     
-    
 #%% body ==================================================
 import pyodbc
 import pandas as pd
@@ -348,6 +354,8 @@ import warnings
 warnings.filterwarnings("ignore") 
 
 schedule.CancelJob
+
+#schedule.every().day.at("11:14").do(atr_today)
 
 schedule.every().day.at("08:00").do(atr_today)
 schedule.every().day.at("09:00").do(atr_today)
