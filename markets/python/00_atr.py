@@ -75,8 +75,14 @@ def atr_today() :
     race_grid = pd.DataFrame(columns=grid_columns)
     horse_grid = pd.DataFrame(columns=horse_columns)
     odds_grid = pd.DataFrame(columns=horse_columns)
-
-    driver = webdriver.Chrome()
+    
+    ua = UserAgent()
+    userAgent = ua.chrome
+    op = webdriver.ChromeOptions()
+    op.add_argument('--headless')
+    op.add_argument('--window-size=1920x1080')
+    op.add_argument(f'user-agent={userAgent}')
+    driver = webdriver.Chrome(options=op)
     first = True
 
     date = pd.Timestamp.now()
@@ -93,7 +99,7 @@ def atr_today() :
         crses = fut_crses.reset_index(drop=True)
         for j in crses.index :
             driver.close()
-            driver = webdriver.Chrome()
+            driver = webdriver.Chrome(options=op)
             first = True
             crse_races = fut_runners[fut_runners.crse_name == crses.crse_name[j]].drop_duplicates(subset='race_id').reset_index(drop=True)
             for k in crse_races.index :
@@ -216,8 +222,14 @@ def atr_tomorrow() :
     race_grid = pd.DataFrame(columns=grid_columns)
     horse_grid = pd.DataFrame(columns=horse_columns)
     odds_grid = pd.DataFrame(columns=horse_columns)
-
-    driver = webdriver.Chrome()
+    
+    ua = UserAgent()
+    userAgent = ua.chrome
+    op = webdriver.ChromeOptions()
+    op.add_argument('--headless')
+    op.add_argument('--window-size=1920x1080')
+    op.add_argument(f'user-agent={userAgent}')
+    driver = webdriver.Chrome(options=op)
     first = True
     
     date = (pd.Timestamp.now() + pd.DateOffset(days=1)).normalize()
@@ -234,7 +246,7 @@ def atr_tomorrow() :
         crses = fut_crses.reset_index(drop=True)
         for j in crses.index :
             driver.close()
-            driver = webdriver.Chrome()
+            driver = webdriver.Chrome(options=op)
             first = True
             crse_races = fut_runners[fut_runners.crse_name == crses.crse_name[j]].drop_duplicates(subset='race_id').reset_index(drop=True)
             for k in crse_races.index :
@@ -350,16 +362,25 @@ from selenium.common.exceptions import StaleElementReferenceException
 import pyarrow.feather as feather
 import schedule
 import time
+from fake_useragent import UserAgent
 import warnings 
 warnings.filterwarnings("ignore") 
 
 schedule.clear()
 
+atr_tomorrow()
+
+schedule.every().day.at("07:30").do(atr_today)
 schedule.every().day.at("08:00").do(atr_today)
+schedule.every().day.at("08:30").do(atr_today)
 schedule.every().day.at("09:00").do(atr_today)
+schedule.every().day.at("09:30").do(atr_today)
 schedule.every().day.at("10:00").do(atr_today)
+schedule.every().day.at("10:30").do(atr_today)
 schedule.every().day.at("11:00").do(atr_today)
+schedule.every().day.at("11:30").do(atr_today)
 schedule.every().day.at("12:00").do(atr_today)
+schedule.every().day.at("12:30").do(atr_today)
 schedule.every().day.at("13:00").do(atr_today)
 schedule.every().day.at("14:00").do(atr_today)
 schedule.every().day.at("15:00").do(atr_today)
@@ -369,12 +390,10 @@ schedule.every().day.at("18:00").do(atr_today)
 schedule.every().day.at("19:00").do(atr_today)
 
 schedule.every().day.at("16:00").do(atr_tomorrow)
-schedule.every().day.at("17:00").do(atr_tomorrow)
 schedule.every().day.at("18:00").do(atr_tomorrow)
 schedule.every().day.at("19:00").do(atr_tomorrow)
 schedule.every().day.at("20:00").do(atr_tomorrow)
 schedule.every().day.at("21:00").do(atr_tomorrow)
-schedule.every().day.at("22:00").do(atr_tomorrow)
 schedule.every().day.at("23:00").do(atr_tomorrow)
 
 while True :
