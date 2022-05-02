@@ -199,6 +199,8 @@ def atr_today() :
         
         odds_grid['med_odds'] = odds_grid.median(axis = 1)
         odds_grid.crse_name.replace('Epsom Downs', 'Epsom', inplace=True)
+        odds_grid['scrape'] = 'today'
+        odds_grid['timestamp'] = pd.Timestamp.now()
         feather.write_feather(odds_grid, '../output/' + date.strftime('%Y-%m-%d') + '_atr_odds' + pd.Timestamp.now().strftime('%d-%H-%M') + '.ftr')
     
     driver.close()
@@ -345,6 +347,8 @@ def atr_tomorrow() :
                 
         odds_grid['med_odds'] = odds_grid.median(axis = 1)
         odds_grid.crse_name.replace('Epsom Downs', 'Epsom', inplace=True)
+        odds_grid['scrape'] = 'tomorrow'
+        odds_grid['timestamp'] = pd.Timestamp.now()
         feather.write_feather(odds_grid, '../output/' + date.strftime('%Y-%m-%d') + '_atr_odds' + pd.Timestamp.now().strftime('%d-%H-%M') + '.ftr')
              
     driver.close()
@@ -496,8 +500,10 @@ def atr_180min(runners) :
     runners = runners[((runners.race_datetime - pd.DateOffset(minutes=180)) < (pd.Timestamp.now() + pd.DateOffset(minutes=1))) & ((runners.race_datetime - pd.DateOffset(minutes=180)) > (pd.Timestamp.now() - pd.DateOffset(minutes=1)))]
     if len(runners) > 0 :
         odds_grid = atr_gen(runners)
+        odds_grid['scrape'] = '180 min'
+        odds_grid['timestamp'] = pd.Timestamp.now()
         feather.write_feather(odds_grid, '../output/' + pd.Timestamp.now().strftime('%Y-%m-%d') + '_atr_180_odds' + pd.Timestamp.now().strftime('%d-%H-%M') + '.ftr')
-        print("30min scraped")
+        print("180 min scraped")
         print(pd.Timestamp.now())
         print()
         
@@ -507,8 +513,10 @@ def atr_120min(runners) :
     runners = runners[((runners.race_datetime - pd.DateOffset(minutes=120)) < (pd.Timestamp.now() + pd.DateOffset(minutes=1))) & ((runners.race_datetime - pd.DateOffset(minutes=120)) > (pd.Timestamp.now() - pd.DateOffset(minutes=1)))]
     if len(runners) > 0 :
         odds_grid = atr_gen(runners)
+        odds_grid['scrape'] = '120 min'
+        odds_grid['timestamp'] = pd.Timestamp.now()
         feather.write_feather(odds_grid, '../output/' + pd.Timestamp.now().strftime('%Y-%m-%d') + '_atr_120_odds' + pd.Timestamp.now().strftime('%d-%H-%M') + '.ftr')
-        print("30min scraped")
+        print("120 min scraped")
         print(pd.Timestamp.now())
         print()
         
@@ -518,8 +526,10 @@ def atr_090min(runners) :
     runners = runners[((runners.race_datetime - pd.DateOffset(minutes=90)) < (pd.Timestamp.now() + pd.DateOffset(minutes=1))) & ((runners.race_datetime - pd.DateOffset(minutes=90)) > (pd.Timestamp.now() - pd.DateOffset(minutes=1)))]
     if len(runners) > 0 :
         odds_grid = atr_gen(runners)
+        odds_grid['scrape'] = '90 min'
+        odds_grid['timestamp'] = pd.Timestamp.now()
         feather.write_feather(odds_grid, '../output/' + pd.Timestamp.now().strftime('%Y-%m-%d') + '_atr_090_odds' + pd.Timestamp.now().strftime('%d-%H-%M') + '.ftr')
-        print("30min scraped")
+        print("90 min scraped")
         print(pd.Timestamp.now())
         print()
         
@@ -529,8 +539,10 @@ def atr_060min(runners) :
     runners = runners[((runners.race_datetime - pd.DateOffset(minutes=60)) < (pd.Timestamp.now() + pd.DateOffset(minutes=1))) & ((runners.race_datetime - pd.DateOffset(minutes=60)) > (pd.Timestamp.now() - pd.DateOffset(minutes=1)))]
     if len(runners) > 0 :
         odds_grid = atr_gen(runners)
+        odds_grid['scrape'] = '60 min'
+        odds_grid['timestamp'] = pd.Timestamp.now()
         feather.write_feather(odds_grid, '../output/' + pd.Timestamp.now().strftime('%Y-%m-%d') + '_atr_060_odds' + pd.Timestamp.now().strftime('%d-%H-%M') + '.ftr')
-        print("30min scraped")
+        print("60 min scraped")
         print(pd.Timestamp.now())
         print()
         
@@ -540,8 +552,10 @@ def atr_030min(runners) :
     runners = runners[((runners.race_datetime - pd.DateOffset(minutes=30)) < (pd.Timestamp.now() + pd.DateOffset(minutes=1))) & ((runners.race_datetime - pd.DateOffset(minutes=30)) > (pd.Timestamp.now() - pd.DateOffset(minutes=1)))]
     if len(runners) > 0 :
         odds_grid = atr_gen(runners)
+        odds_grid['scrape'] = '30 min'
+        odds_grid['timestamp'] = pd.Timestamp.now()
         feather.write_feather(odds_grid, '../output/' + pd.Timestamp.now().strftime('%Y-%m-%d') + '_atr_030_odds' + pd.Timestamp.now().strftime('%d-%H-%M') + '.ftr')
-        print("30min scraped")
+        print("30 min scraped")
         print(pd.Timestamp.now())
         print()
 
@@ -551,8 +565,10 @@ def atr_020min(runners) :
     runners = runners[((runners.race_datetime - pd.DateOffset(minutes=20)) < (pd.Timestamp.now() + pd.DateOffset(minutes=1))) & ((runners.race_datetime - pd.DateOffset(minutes=20)) > (pd.Timestamp.now() - pd.DateOffset(minutes=1)))]
     if len(runners) > 0 :
         odds_grid = atr_gen(runners)
+        odds_grid['scrape'] = '20 min'
+        odds_grid['timestamp'] = pd.Timestamp.now()
         feather.write_feather(odds_grid, '../output/' + pd.Timestamp.now().strftime('%Y-%m-%d') + '_atr_020_odds' + pd.Timestamp.now().strftime('%d-%H-%M') + '.ftr')
-        print("20min scraped")
+        print("20 min scraped")
         print(pd.Timestamp.now())
         print()
         
@@ -562,8 +578,10 @@ def atr_010min(runners) :
     runners = runners[((runners.race_datetime - pd.DateOffset(minutes=10)) < (pd.Timestamp.now() + pd.DateOffset(minutes=1))) & ((runners.race_datetime - pd.DateOffset(minutes=10)) > (pd.Timestamp.now() - pd.DateOffset(minutes=1)))]
     if len(runners) > 0 :
         odds_grid = atr_gen(runners)
+        odds_grid['scrape'] = '10 min'
+        odds_grid['timestamp'] = pd.Timestamp.now()
         feather.write_feather(odds_grid, '../output/' + pd.Timestamp.now().strftime('%Y-%m-%d') + '_atr_010_odds' + pd.Timestamp.now().strftime('%d-%H-%M') + '.ftr')
-        print("10min scraped")
+        print("10 min scraped")
         print(pd.Timestamp.now())
         print()
         
@@ -573,8 +591,10 @@ def atr_005min(runners) :
     runners = runners[((runners.race_datetime - pd.DateOffset(minutes=5)) < (pd.Timestamp.now() + pd.DateOffset(minutes=1))) & ((runners.race_datetime - pd.DateOffset(minutes=5)) > (pd.Timestamp.now() - pd.DateOffset(minutes=1)))]
     if len(runners) > 0 :
         odds_grid = atr_gen(runners)
+        odds_grid['scrape'] = '5 min'
+        odds_grid['timestamp'] = pd.Timestamp.now()
         feather.write_feather(odds_grid, '../output/' + pd.Timestamp.now().strftime('%Y-%m-%d') + '_atr_005_odds' + pd.Timestamp.now().strftime('%d-%H-%M') + '.ftr')
-        print("5min scraped")
+        print("5 min scraped")
         print(pd.Timestamp.now())
         print()
         
@@ -615,9 +635,13 @@ schedule.every().day.at("20:00").do(atr_tomorrow)
 schedule.every().day.at("21:00").do(atr_tomorrow)
 schedule.every().day.at("23:00").do(atr_tomorrow)
 
+runners = proform_import()
+
 while True :
     
-    runners = proform_import()
+    if runners.race_datetime.dt.date.min() < pd.Timestamp.now().normalize() :
+        runners = proform_import()
+    
     atr_180min(runners)
     atr_120min(runners)
     atr_090min(runners)
@@ -627,4 +651,4 @@ while True :
     atr_010min(runners)
     atr_005min(runners)
     schedule.run_pending()
-    time.sleep(30)
+    time.sleep(60)
