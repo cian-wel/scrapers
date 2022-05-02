@@ -353,6 +353,8 @@ import time
 import warnings 
 warnings.filterwarnings("ignore") 
 
+schedule.clear()
+
 schedule.every().day.at("08:00").do(atr_today)
 schedule.every().day.at("09:00").do(atr_today)
 schedule.every().day.at("10:00").do(atr_today)
