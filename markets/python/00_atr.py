@@ -127,7 +127,7 @@ def atr_today() :
                                       'horse_name':res}
                             horse_grid = horse_grid.append(horse_odds, ignore_index=True)
                             #print(res)
-                    except StaleElementReferenceException:
+                    except Exception:
                         driver.get(url)
                         horse_grid=pd.DataFrame(columns = ['crse_name', 'race_datetime', 'horse_name'])
                         for horse in driver.find_elements_by_class_name('odds-grid-horse__name'):
@@ -137,7 +137,7 @@ def atr_today() :
                                       'horse_name':res}
                             horse_grid = horse_grid.append(horse_odds, ignore_index=True)
                             #print(res)
-                except StaleElementReferenceException:
+                except Exception:
                     driver.get(url)
                     horse_grid=pd.DataFrame(columns = ['crse_name', 'race_datetime', 'horse_name'])
                     for horse in driver.find_elements_by_class_name('odds-grid-horse__name'):
@@ -157,7 +157,7 @@ def atr_today() :
                             odds = {'odds' : res}
                             race_odds = race_odds.append(odds, ignore_index=True)
                             #print(res)
-                    except StaleElementReferenceException:
+                    except Exception:
                         driver.get(url)
                         race_odds = pd.DataFrame(columns=['odds'])
                         for bookie in driver.find_elements_by_class_name('odds-grid__cell--odds') :
@@ -165,7 +165,7 @@ def atr_today() :
                             odds = {'odds' : res}
                             race_odds = race_odds.append(odds, ignore_index=True)
                             #print(res)
-                except StaleElementReferenceException:
+                except Exception:
                     driver.get(url)
                     race_odds = pd.DataFrame(columns=['odds'])
                     for bookie in driver.find_elements_by_class_name('odds-grid__cell--odds') :
@@ -276,7 +276,7 @@ def atr_tomorrow() :
                                       'horse_name':res}
                             horse_grid = horse_grid.append(horse_odds, ignore_index=True)
                             #print(res)
-                    except StaleElementReferenceException:
+                    except Exception:
                         driver.get(url)
                         horse_grid=pd.DataFrame(columns = ['crse_name', 'race_datetime', 'horse_name'])
                         for horse in driver.find_elements_by_class_name('odds-grid-horse__name'):
@@ -286,7 +286,7 @@ def atr_tomorrow() :
                                       'horse_name':res}
                             horse_grid = horse_grid.append(horse_odds, ignore_index=True)
                             #print(res)
-                except StaleElementReferenceException:
+                except Exception:
                     driver.get(url)
                     horse_grid=pd.DataFrame(columns = ['crse_name', 'race_datetime', 'horse_name'])
                     for horse in driver.find_elements_by_class_name('odds-grid-horse__name'):
@@ -314,7 +314,7 @@ def atr_tomorrow() :
                             odds = {'odds' : res}
                             race_odds = race_odds.append(odds, ignore_index=True)
                             #print(res)
-                except StaleElementReferenceException:
+                except Exception:
                     driver.get(url)
                     race_odds = pd.DataFrame(columns=['odds'])
                     for bookie in driver.find_elements_by_class_name('odds-grid__cell--odds') :
@@ -420,7 +420,7 @@ def atr_gen(runners) :
                                       'horse_name':res}
                             horse_grid = horse_grid.append(horse_odds, ignore_index=True)
                             #print(res)
-                    except StaleElementReferenceException:
+                    except Exception:
                         driver.get(url)
                         horse_grid=pd.DataFrame(columns = ['crse_name', 'race_datetime', 'horse_name'])
                         for horse in driver.find_elements_by_class_name('odds-grid-horse__name'):
@@ -430,7 +430,7 @@ def atr_gen(runners) :
                                       'horse_name':res}
                             horse_grid = horse_grid.append(horse_odds, ignore_index=True)
                             #print(res)
-                except StaleElementReferenceException:
+                except Exception:
                     driver.get(url)
                     horse_grid=pd.DataFrame(columns = ['crse_name', 'race_datetime', 'horse_name'])
                     for horse in driver.find_elements_by_class_name('odds-grid-horse__name'):
@@ -450,7 +450,7 @@ def atr_gen(runners) :
                             odds = {'odds' : res}
                             race_odds = race_odds.append(odds, ignore_index=True)
                             #print(res)
-                    except StaleElementReferenceException:
+                    except Exception:
                         driver.get(url)
                         race_odds = pd.DataFrame(columns=['odds'])
                         for bookie in driver.find_elements_by_class_name('odds-grid__cell--odds') :
@@ -458,7 +458,7 @@ def atr_gen(runners) :
                             odds = {'odds' : res}
                             race_odds = race_odds.append(odds, ignore_index=True)
                             #print(res)
-                except StaleElementReferenceException:
+                except Exception:
                     driver.get(url)
                     race_odds = pd.DataFrame(columns=['odds'])
                     for bookie in driver.find_elements_by_class_name('odds-grid__cell--odds') :
@@ -497,7 +497,7 @@ def atr_gen(runners) :
     return odds_grid
 
 def atr_180min(runners) :
-    runners = runners[((runners.race_datetime - pd.DateOffset(minutes=180)) < (pd.Timestamp.now() + pd.DateOffset(minutes=1))) & ((runners.race_datetime - pd.DateOffset(minutes=180)) > (pd.Timestamp.now() - pd.DateOffset(minutes=1)))]
+    runners = runners[((runners.race_datetime - pd.DateOffset(minutes=180)) < (pd.Timestamp.now() + pd.DateOffset(minutes=0.75))) & ((runners.race_datetime - pd.DateOffset(minutes=180)) > (pd.Timestamp.now() - pd.DateOffset(minutes=0.75)))]
     if len(runners) > 0 :
         odds_grid = atr_gen(runners)
         odds_grid['scrape'] = '180 min'
@@ -510,7 +510,7 @@ def atr_180min(runners) :
     return
 
 def atr_120min(runners) :
-    runners = runners[((runners.race_datetime - pd.DateOffset(minutes=120)) < (pd.Timestamp.now() + pd.DateOffset(minutes=1))) & ((runners.race_datetime - pd.DateOffset(minutes=120)) > (pd.Timestamp.now() - pd.DateOffset(minutes=1)))]
+    runners = runners[((runners.race_datetime - pd.DateOffset(minutes=120)) < (pd.Timestamp.now() + pd.DateOffset(minutes=0.75))) & ((runners.race_datetime - pd.DateOffset(minutes=120)) > (pd.Timestamp.now() - pd.DateOffset(minutes=0.75)))]
     if len(runners) > 0 :
         odds_grid = atr_gen(runners)
         odds_grid['scrape'] = '120 min'
@@ -523,7 +523,7 @@ def atr_120min(runners) :
     return
 
 def atr_090min(runners) :
-    runners = runners[((runners.race_datetime - pd.DateOffset(minutes=90)) < (pd.Timestamp.now() + pd.DateOffset(minutes=1))) & ((runners.race_datetime - pd.DateOffset(minutes=90)) > (pd.Timestamp.now() - pd.DateOffset(minutes=1)))]
+    runners = runners[((runners.race_datetime - pd.DateOffset(minutes=90)) < (pd.Timestamp.now() + pd.DateOffset(minutes=0.75))) & ((runners.race_datetime - pd.DateOffset(minutes=90)) > (pd.Timestamp.now() - pd.DateOffset(minutes=0.75)))]
     if len(runners) > 0 :
         odds_grid = atr_gen(runners)
         odds_grid['scrape'] = '90 min'
@@ -536,7 +536,7 @@ def atr_090min(runners) :
     return
 
 def atr_060min(runners) :
-    runners = runners[((runners.race_datetime - pd.DateOffset(minutes=60)) < (pd.Timestamp.now() + pd.DateOffset(minutes=1))) & ((runners.race_datetime - pd.DateOffset(minutes=60)) > (pd.Timestamp.now() - pd.DateOffset(minutes=1)))]
+    runners = runners[((runners.race_datetime - pd.DateOffset(minutes=60)) < (pd.Timestamp.now() + pd.DateOffset(minutes=0.75))) & ((runners.race_datetime - pd.DateOffset(minutes=60)) > (pd.Timestamp.now() - pd.DateOffset(minutes=0.75)))]
     if len(runners) > 0 :
         odds_grid = atr_gen(runners)
         odds_grid['scrape'] = '60 min'
@@ -549,7 +549,7 @@ def atr_060min(runners) :
     return
 
 def atr_030min(runners) :
-    runners = runners[((runners.race_datetime - pd.DateOffset(minutes=30)) < (pd.Timestamp.now() + pd.DateOffset(minutes=1))) & ((runners.race_datetime - pd.DateOffset(minutes=30)) > (pd.Timestamp.now() - pd.DateOffset(minutes=1)))]
+    runners = runners[((runners.race_datetime - pd.DateOffset(minutes=30)) < (pd.Timestamp.now() + pd.DateOffset(minutes=0.75))) & ((runners.race_datetime - pd.DateOffset(minutes=30)) > (pd.Timestamp.now() - pd.DateOffset(minutes=0.75)))]
     if len(runners) > 0 :
         odds_grid = atr_gen(runners)
         odds_grid['scrape'] = '30 min'
@@ -562,7 +562,7 @@ def atr_030min(runners) :
     return
 
 def atr_020min(runners) :
-    runners = runners[((runners.race_datetime - pd.DateOffset(minutes=20)) < (pd.Timestamp.now() + pd.DateOffset(minutes=1))) & ((runners.race_datetime - pd.DateOffset(minutes=20)) > (pd.Timestamp.now() - pd.DateOffset(minutes=1)))]
+    runners = runners[((runners.race_datetime - pd.DateOffset(minutes=20)) < (pd.Timestamp.now() + pd.DateOffset(minutes=0.75))) & ((runners.race_datetime - pd.DateOffset(minutes=20)) > (pd.Timestamp.now() - pd.DateOffset(minutes=0.75)))]
     if len(runners) > 0 :
         odds_grid = atr_gen(runners)
         odds_grid['scrape'] = '20 min'
@@ -575,7 +575,7 @@ def atr_020min(runners) :
     return
 
 def atr_010min(runners) :
-    runners = runners[((runners.race_datetime - pd.DateOffset(minutes=10)) < (pd.Timestamp.now() + pd.DateOffset(minutes=1))) & ((runners.race_datetime - pd.DateOffset(minutes=10)) > (pd.Timestamp.now() - pd.DateOffset(minutes=1)))]
+    runners = runners[((runners.race_datetime - pd.DateOffset(minutes=10)) < (pd.Timestamp.now() + pd.DateOffset(minutes=0.75))) & ((runners.race_datetime - pd.DateOffset(minutes=10)) > (pd.Timestamp.now() - pd.DateOffset(minutes=0.75)))]
     if len(runners) > 0 :
         odds_grid = atr_gen(runners)
         odds_grid['scrape'] = '10 min'
@@ -588,7 +588,7 @@ def atr_010min(runners) :
     return
 
 def atr_005min(runners) :
-    runners = runners[((runners.race_datetime - pd.DateOffset(minutes=5)) < (pd.Timestamp.now() + pd.DateOffset(minutes=1))) & ((runners.race_datetime - pd.DateOffset(minutes=5)) > (pd.Timestamp.now() - pd.DateOffset(minutes=1)))]
+    runners = runners[((runners.race_datetime - pd.DateOffset(minutes=5)) < (pd.Timestamp.now() + pd.DateOffset(minutes=0.75))) & ((runners.race_datetime - pd.DateOffset(minutes=5)) > (pd.Timestamp.now() - pd.DateOffset(minutes=0.75)))]
     if len(runners) > 0 :
         odds_grid = atr_gen(runners)
         odds_grid['scrape'] = '5 min'
@@ -599,8 +599,6 @@ def atr_005min(runners) :
         print()
         
     return
-        
-    
 
 #%% body ==================================================
 import pyodbc
