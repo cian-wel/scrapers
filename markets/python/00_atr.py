@@ -207,6 +207,9 @@ def atr_today() :
     
     print("today scraped")
     print(pd.Timestamp.now())
+    
+    global sched_ran
+    sched_ran = True
     return
     
 #%% scrape tomorrow
@@ -350,11 +353,14 @@ def atr_tomorrow() :
         odds_grid['scrape'] = 'tomorrow'
         odds_grid['timestamp'] = pd.Timestamp.now()
         feather.write_feather(odds_grid, '../output/' + date.strftime('%Y-%m-%d') + '_atr_odds' + pd.Timestamp.now().strftime('%d-%H-%M') + '.ftr')
-             
+        
     driver.close()
     
     print("tomorrow scraped")
     print(pd.Timestamp.now())
+    
+    global sched_ran 
+    sched_ran = True
     return
 
 #%% time from race scrape
@@ -637,6 +643,8 @@ runners = proform_import()
 
 while True :
     
+    sched_ran = False
+    
     if runners.race_datetime.dt.date.min() < pd.Timestamp.now().normalize() :
         runners = proform_import()
     
@@ -649,4 +657,5 @@ while True :
     atr_010min(runners)
     atr_005min(runners)
     schedule.run_pending()
-    time.sleep(60)
+    if ~sched_ran :
+        time.sleep(60)
