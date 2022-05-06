@@ -60,13 +60,12 @@ def proform_import() :
     
     return runners
 
-#%% today function
-def atr_today() :
+def gen_atr(fut_runners) :
+    
     base_url = 'https://www.attheraces.com/racecard/'
     left_books = ['bet365', 'will_hill', 'lads', 'pp', 'coral', 'unibet', 'sport888', 'betfairsb', 'sts', 'tote']
     right_books = ['betfred', 'betvictor', 'boylesports', 'sportnation', 'parimatch', 'betway', 'fansbet', 'grosvenor', 'spreadex', 'skybet', 'quinnbet', 'matchbook', 'smarkets', 'bfex']
 
-    runners = proform_import()
     horse_columns = ['crse_name', 'race_datetime', 'horse_name']
     grid_columns = []
     grid_columns.extend(horse_columns)
@@ -84,59 +83,44 @@ def atr_today() :
     op.add_argument(f'user-agent={userAgent}')
     driver = webdriver.Chrome(options=op)
     first = True
-
-    date = pd.Timestamp.now()
     
-    fut_runners = runners
     fut_runners.crse_name.replace('Epsom', 'Epsom Downs', inplace=True)
-    fut_runners = fut_runners[(fut_runners.race_datetime > date) & (fut_runners.race_datetime < (date.normalize() + pd.DateOffset(days=1)))]
     fut_crses = fut_runners.drop_duplicates(subset='crse_name').drop(columns=['race_id', 'horse_id', 'horse_name']).reset_index(drop=True)
     fut_crses['adj_crse_name'] = fut_crses.crse_name.replace(' ', '-', regex=True)
     fut_crses['date'] = fut_crses.race_datetime.dt.date
 
     # scrape
-    if len(fut_crses) > 0 :
-        crses = fut_crses.reset_index(drop=True)
-        for j in crses.index :
-            driver.close()
-            driver = webdriver.Chrome(options=op)
-            first = True
-            crse_races = fut_runners[fut_runners.crse_name == crses.crse_name[j]].drop_duplicates(subset='race_id').reset_index(drop=True)
-            for k in crse_races.index :
-                horse_grid = pd.DataFrame(columns=horse_columns)
-                
-                url = base_url + crses.adj_crse_name[j] + '/' + crses.date[j].strftime(format='%d-%B-%Y') + '/' + crse_races.race_datetime[k].strftime(format='%H%M')
-                print(url)
-                driver.get(url)
-                
-                if first :
-                    driver.maximize_window()
-                    driver.find_element_by_xpath('//*/div[1]/div/div/div[2]/div/button[2]').click()
-                    driver.find_element_by_xpath('//*/div[4]/div[1]/aside/div/ul/li[1]/label').click()
-                    driver.find_element_by_xpath('//*/div[4]/div[1]/aside/div/ul/li[3]/label').click()
-                    first = False
-                
-                # get horse names (may not be in order)
-                try:
-                    try :
-                        horse_grid=pd.DataFrame(columns = ['crse_name', 'race_datetime', 'horse_name'])
-                        for horse in driver.find_elements_by_class_name('odds-grid-horse__name'):
-                            res = horse.text
-                            horse_odds = {'crse_name':crse_races.crse_name[k],
-                                      'race_datetime':crse_races.race_datetime[k],
-                                      'horse_name':res}
-                            horse_grid = horse_grid.append(horse_odds, ignore_index=True)
-                            #print(res)
-                    except Exception:
-                        driver.get(url)
-                        horse_grid=pd.DataFrame(columns = ['crse_name', 'race_datetime', 'horse_name'])
-                        for horse in driver.find_elements_by_class_name('odds-grid-horse__name'):
-                            res = horse.text
-                            horse_odds = {'crse_name':crse_races.crse_name[k],
-                                      'race_datetime':crse_races.race_datetime[k],
-                                      'horse_name':res}
-                            horse_grid = horse_grid.append(horse_odds, ignore_index=True)
-                            #print(res)
+    crses = fut_crses.reset_index(drop=True)
+    for j in crses.index :
+        driver.close()
+        driver = webdriver.Chrome(options=op)
+        first = True
+        crse_races = fut_runners[fut_runners.crse_name == crses.crse_name[j]].drop_duplicates(subset='race_id').reset_index(drop=True)
+        for k in crse_races.index :
+            horse_grid = pd.DataFrame(columns=horse_columns)
+            
+            url = base_url + crses.adj_crse_name[j] + '/' + crses.date[j].strftime(format='%d-%B-%Y') + '/' + crse_races.race_datetime[k].strftime(format='%H%M')
+            print(url)
+            driver.get(url)
+            
+            if first :
+                driver.maximize_window()
+                driver.find_element_by_xpath('//*/div[1]/div/div/div[2]/div/button[2]').click()
+                driver.find_element_by_xpath('//*/div[4]/div[1]/aside/div/ul/li[1]/label').click()
+                driver.find_element_by_xpath('//*/div[4]/div[1]/aside/div/ul/li[3]/label').click()
+                first = False
+            
+            # get horse names (may not be in order)
+            try:
+                try :
+                    horse_grid=pd.DataFrame(columns = ['crse_name', 'race_datetime', 'horse_name'])
+                    for horse in driver.find_elements_by_class_name('odds-grid-horse__name'):
+                        res = horse.text
+                        horse_odds = {'crse_name':crse_races.crse_name[k],
+                                  'race_datetime':crse_races.race_datetime[k],
+                                  'horse_name':res}
+                        horse_grid = horse_grid.append(horse_odds, ignore_index=True)
+                        #print(res)
                 except Exception:
                     driver.get(url)
                     horse_grid=pd.DataFrame(columns = ['crse_name', 'race_datetime', 'horse_name'])
@@ -147,24 +131,26 @@ def atr_today() :
                                   'horse_name':res}
                         horse_grid = horse_grid.append(horse_odds, ignore_index=True)
                         #print(res)
-                
-                # get odds
-                try:
-                    try :
-                        race_odds = pd.DataFrame(columns=['odds'])
-                        for bookie in driver.find_elements_by_class_name('odds-grid__cell--odds') :
-                            res = bookie.text
-                            odds = {'odds' : res}
-                            race_odds = race_odds.append(odds, ignore_index=True)
-                            #print(res)
-                    except Exception:
-                        driver.get(url)
-                        race_odds = pd.DataFrame(columns=['odds'])
-                        for bookie in driver.find_elements_by_class_name('odds-grid__cell--odds') :
-                            res = bookie.text
-                            odds = {'odds' : res}
-                            race_odds = race_odds.append(odds, ignore_index=True)
-                            #print(res)
+            except Exception:
+                driver.get(url)
+                horse_grid=pd.DataFrame(columns = ['crse_name', 'race_datetime', 'horse_name'])
+                for horse in driver.find_elements_by_class_name('odds-grid-horse__name'):
+                    res = horse.text
+                    horse_odds = {'crse_name':crse_races.crse_name[k],
+                              'race_datetime':crse_races.race_datetime[k],
+                              'horse_name':res}
+                    horse_grid = horse_grid.append(horse_odds, ignore_index=True)
+                    #print(res)
+            
+            # get odds
+            try:
+                try :
+                    race_odds = pd.DataFrame(columns=['odds'])
+                    for bookie in driver.find_elements_by_class_name('odds-grid__cell--odds') :
+                        res = bookie.text
+                        odds = {'odds' : res}
+                        race_odds = race_odds.append(odds, ignore_index=True)
+                        #print(res)
                 except Exception:
                     driver.get(url)
                     race_odds = pd.DataFrame(columns=['odds'])
@@ -173,37 +159,58 @@ def atr_today() :
                         odds = {'odds' : res}
                         race_odds = race_odds.append(odds, ignore_index=True)
                         #print(res)
+            except Exception:
+                driver.get(url)
+                race_odds = pd.DataFrame(columns=['odds'])
+                for bookie in driver.find_elements_by_class_name('odds-grid__cell--odds') :
+                    res = bookie.text
+                    odds = {'odds' : res}
+                    race_odds = race_odds.append(odds, ignore_index=True)
+                    #print(res)
+            
+            # clean odds and add to odds grid
+            race_odds.odds.replace(to_replace='-',value = np.nan, inplace=True)
+            race_odds.odds.replace(to_replace='odds',value = np.nan, inplace=True)
+            race_odds.odds.replace(to_replace='N/A',value = np.nan, inplace=True)
+            race_odds.odds.replace(to_replace='SP',value = np.nan, inplace=True)
+            race_odds['odds'] = pd.to_numeric(race_odds.odds)
+            
+            left_grid = pd.DataFrame(race_odds[race_odds.index < (len(horse_grid)*len(left_books))])
+            left_grid = pd.DataFrame(np.reshape(left_grid.values, (len(horse_grid),len(left_books))))
+            left_grid.columns = left_books
+            
+            right_grid = pd.DataFrame(race_odds[race_odds.index >= (len(horse_grid)*len(left_books))])
+            right_grid = pd.DataFrame(np.reshape(right_grid.values, (len(horse_grid),len(right_books))))
+            right_grid.columns = right_books
+            
+            race_grid = pd.DataFrame()
+            race_grid[horse_columns] = horse_grid
+            race_grid[left_books] = left_grid
+            race_grid[right_books] = right_grid
+            
+            odds_grid = odds_grid.append(race_grid, ignore_index=True)
                 
-                # clean odds and add to odds grid
-                race_odds.odds.replace(to_replace='-',value = np.nan, inplace=True)
-                race_odds.odds.replace(to_replace='odds',value = np.nan, inplace=True)
-                race_odds.odds.replace(to_replace='N/A',value = np.nan, inplace=True)
-                race_odds.odds.replace(to_replace='SP',value = np.nan, inplace=True)
-                race_odds['odds'] = pd.to_numeric(race_odds.odds)
-                
-                left_grid = pd.DataFrame(race_odds[race_odds.index < (len(horse_grid)*len(left_books))])
-                left_grid = pd.DataFrame(np.reshape(left_grid.values, (len(horse_grid),len(left_books))))
-                left_grid.columns = left_books
-                
-                right_grid = pd.DataFrame(race_odds[race_odds.index >= (len(horse_grid)*len(left_books))])
-                right_grid = pd.DataFrame(np.reshape(right_grid.values, (len(horse_grid),len(right_books))))
-                right_grid.columns = right_books
-                
-                race_grid = pd.DataFrame()
-                race_grid[horse_columns] = horse_grid
-                race_grid[left_books] = left_grid
-                race_grid[right_books] = right_grid
-                
-                odds_grid = odds_grid.append(race_grid, ignore_index=True)
-                
+    odds_grid['med_odds'] = odds_grid.median(axis = 1)
+    odds_grid.crse_name.replace('Epsom Downs', 'Epsom', inplace=True)
+    
+    driver.close()
+    
+    return odds_grid
+    
+
+#%% today function
+def atr_today() :
+    
+    date = pd.Timestamp.now()
+    runners = proform_import()
+    fut_runners = runners
+    fut_runners = runners[(runners.race_datetime > date) & (runners.race_datetime < (date.normalize() + pd.DateOffset(days=1)))]
+    if len(fut_runners) > 0 :
         
-        odds_grid['med_odds'] = odds_grid.median(axis = 1)
-        odds_grid.crse_name.replace('Epsom Downs', 'Epsom', inplace=True)
+        odds_grid = gen_atr(fut_runners)
         odds_grid['scrape'] = 'today'
         odds_grid['timestamp'] = pd.Timestamp.now()
         feather.write_feather(odds_grid, '../output/' + date.strftime('%Y-%m-%d') + '_atr_odds' + pd.Timestamp.now().strftime('%d-%H-%M') + '.ftr')
-    
-    driver.close()
     
     print("today scraped")
     print(pd.Timestamp.now())
@@ -214,147 +221,17 @@ def atr_today() :
     
 #%% scrape tomorrow
 def atr_tomorrow() :
-    base_url = 'https://www.attheraces.com/racecard/'
-    left_books = ['bet365', 'will_hill', 'lads', 'pp', 'coral', 'unibet', 'sport888', 'betfairsb', 'sts', 'tote']
-    right_books = ['betfred', 'betvictor', 'boylesports', 'sportnation', 'parimatch', 'betway', 'fansbet', 'grosvenor', 'spreadex', 'skybet', 'quinnbet', 'matchbook', 'smarkets', 'bfex']
-
+    
+    date = pd.Timestamp.now() + pd.DateOffset(days=1)
     runners = proform_import()
-    horse_columns = ['crse_name', 'race_datetime', 'horse_name']
-    grid_columns = []
-    grid_columns.extend(horse_columns)
-    grid_columns.extend(left_books)
-    grid_columns.extend(right_books)
-    race_grid = pd.DataFrame(columns=grid_columns)
-    horse_grid = pd.DataFrame(columns=horse_columns)
-    odds_grid = pd.DataFrame(columns=horse_columns)
-    
-    ua = UserAgent()
-    userAgent = ua.chrome
-    op = webdriver.ChromeOptions()
-    op.add_argument('--headless')
-    op.add_argument('--window-size=1920x1080')
-    op.add_argument(f'user-agent={userAgent}')
-    driver = webdriver.Chrome(options=op)
-    first = True
-    
-    date = (pd.Timestamp.now() + pd.DateOffset(days=1)).normalize()
-
     fut_runners = runners
-    fut_runners.crse_name.replace('Epsom', 'Epsom Downs', inplace=True)
-    fut_runners = fut_runners[(fut_runners.race_datetime > date) & (fut_runners.race_datetime < (date.normalize() + pd.DateOffset(days=1)))]
-    fut_crses = fut_runners.drop_duplicates(subset='crse_name').drop(columns=['race_id', 'horse_id', 'horse_name']).reset_index(drop=True)
-    fut_crses['adj_crse_name'] = fut_crses.crse_name.replace(' ', '-', regex=True)
-    fut_crses['date'] = fut_crses.race_datetime.dt.date
-
-    # scrape
-    if len(fut_crses) > 0 :
-        crses = fut_crses.reset_index(drop=True)
-        for j in crses.index :
-            driver.close()
-            driver = webdriver.Chrome(options=op)
-            first = True
-            crse_races = fut_runners[fut_runners.crse_name == crses.crse_name[j]].drop_duplicates(subset='race_id').reset_index(drop=True)
-            for k in crse_races.index :
-                horse_grid = pd.DataFrame(columns=horse_columns)
-                
-                url = base_url + crses.adj_crse_name[j] + '/' + crses.date[j].strftime(format='%d-%B-%Y') + '/' + crse_races.race_datetime[k].strftime(format='%H%M')
-                print(url)
-                driver.get(url)
-                
-                if first :
-                    driver.maximize_window()
-                    driver.find_element_by_xpath('//*/div[1]/div/div/div[2]/div/button[2]').click()
-                    driver.find_element_by_xpath('//*/div[4]/div[1]/aside/div/ul/li[1]/label').click()
-                    driver.find_element_by_xpath('//*/div[4]/div[1]/aside/div/ul/li[3]/label').click()
-                    first = False
-                
-                # get horse names (may not be in order)
-                try:
-                    try :
-                        horse_grid=pd.DataFrame(columns = ['crse_name', 'race_datetime', 'horse_name'])
-                        for horse in driver.find_elements_by_class_name('odds-grid-horse__name'):
-                            res = horse.text
-                            horse_odds = {'crse_name':crse_races.crse_name[k],
-                                      'race_datetime':crse_races.race_datetime[k],
-                                      'horse_name':res}
-                            horse_grid = horse_grid.append(horse_odds, ignore_index=True)
-                            #print(res)
-                    except Exception:
-                        driver.get(url)
-                        horse_grid=pd.DataFrame(columns = ['crse_name', 'race_datetime', 'horse_name'])
-                        for horse in driver.find_elements_by_class_name('odds-grid-horse__name'):
-                            res = horse.text
-                            horse_odds = {'crse_name':crse_races.crse_name[k],
-                                      'race_datetime':crse_races.race_datetime[k],
-                                      'horse_name':res}
-                            horse_grid = horse_grid.append(horse_odds, ignore_index=True)
-                            #print(res)
-                except Exception:
-                    driver.get(url)
-                    horse_grid=pd.DataFrame(columns = ['crse_name', 'race_datetime', 'horse_name'])
-                    for horse in driver.find_elements_by_class_name('odds-grid-horse__name'):
-                        res = horse.text
-                        horse_odds = {'crse_name':crse_races.crse_name[k],
-                                  'race_datetime':crse_races.race_datetime[k],
-                                  'horse_name':res}
-                        horse_grid = horse_grid.append(horse_odds, ignore_index=True)
-                        #print(res)
-                
-                # get odds
-                try:
-                    try :
-                        race_odds = pd.DataFrame(columns=['odds'])
-                        for bookie in driver.find_elements_by_class_name('odds-grid__cell--odds') :
-                            res = bookie.text
-                            odds = {'odds' : res}
-                            race_odds = race_odds.append(odds, ignore_index=True)
-                            #print(res)
-                    except StaleElementReferenceException:
-                        driver.get(url)
-                        race_odds = pd.DataFrame(columns=['odds'])
-                        for bookie in driver.find_elements_by_class_name('odds-grid__cell--odds') :
-                            res = bookie.text
-                            odds = {'odds' : res}
-                            race_odds = race_odds.append(odds, ignore_index=True)
-                            #print(res)
-                except Exception:
-                    driver.get(url)
-                    race_odds = pd.DataFrame(columns=['odds'])
-                    for bookie in driver.find_elements_by_class_name('odds-grid__cell--odds') :
-                        res = bookie.text
-                        odds = {'odds' : res}
-                        race_odds = race_odds.append(odds, ignore_index=True)
-                        #print(res)
-                
-                # clean odds and add to odds grid
-                race_odds.odds.replace(to_replace='-',value = np.nan, inplace=True)
-                race_odds.odds.replace(to_replace='odds',value = np.nan, inplace=True)
-                race_odds.odds.replace(to_replace='N/A',value = np.nan, inplace=True)
-                race_odds.odds.replace(to_replace='SP',value = np.nan, inplace=True)
-                race_odds['odds'] = pd.to_numeric(race_odds.odds)
-                
-                left_grid = pd.DataFrame(race_odds[race_odds.index < (len(horse_grid)*len(left_books))])
-                left_grid = pd.DataFrame(np.reshape(left_grid.values, (len(horse_grid),len(left_books))))
-                left_grid.columns = left_books
-                
-                right_grid = pd.DataFrame(race_odds[race_odds.index >= (len(horse_grid)*len(left_books))])
-                right_grid = pd.DataFrame(np.reshape(right_grid.values, (len(horse_grid),len(right_books))))
-                right_grid.columns = right_books
-                
-                race_grid = pd.DataFrame()
-                race_grid[horse_columns] = horse_grid
-                race_grid[left_books] = left_grid
-                race_grid[right_books] = right_grid
-                
-                odds_grid = odds_grid.append(race_grid, ignore_index=True)
-                
-        odds_grid['med_odds'] = odds_grid.median(axis = 1)
-        odds_grid.crse_name.replace('Epsom Downs', 'Epsom', inplace=True)
-        odds_grid['scrape'] = 'tomorrow'
+    fut_runners = runners[(runners.race_datetime > date) & (runners.race_datetime < (date.normalize() + pd.DateOffset(days=1)))]
+    if len(fut_runners) > 0 :
+        
+        odds_grid = gen_atr(fut_runners)
+        odds_grid['scrape'] = 'today'
         odds_grid['timestamp'] = pd.Timestamp.now()
         feather.write_feather(odds_grid, '../output/' + date.strftime('%Y-%m-%d') + '_atr_odds' + pd.Timestamp.now().strftime('%d-%H-%M') + '.ftr')
-        
-    driver.close()
     
     print("tomorrow scraped")
     print(pd.Timestamp.now())
@@ -363,149 +240,10 @@ def atr_tomorrow() :
     sched_ran = True
     return
 
-#%% time from race scrape
-def atr_gen(runners) :
-    base_url = 'https://www.attheraces.com/racecard/'
-    left_books = ['bet365', 'will_hill', 'lads', 'pp', 'coral', 'unibet', 'sport888', 'betfairsb', 'sts', 'tote']
-    right_books = ['betfred', 'betvictor', 'boylesports', 'sportnation', 'parimatch', 'betway', 'fansbet', 'grosvenor', 'spreadex', 'skybet', 'quinnbet', 'matchbook', 'smarkets', 'bfex']
-
-    horse_columns = ['crse_name', 'race_datetime', 'horse_name']
-    grid_columns = []
-    grid_columns.extend(horse_columns)
-    grid_columns.extend(left_books)
-    grid_columns.extend(right_books)
-    race_grid = pd.DataFrame(columns=grid_columns)
-    horse_grid = pd.DataFrame(columns=horse_columns)
-    odds_grid = pd.DataFrame(columns=horse_columns)
-    
-    ua = UserAgent()
-    userAgent = ua.chrome
-    op = webdriver.ChromeOptions()
-    op.add_argument('--headless')
-    op.add_argument('--window-size=1920x1080')
-    op.add_argument(f'user-agent={userAgent}')
-    driver = webdriver.Chrome(options=op)
-    first = True
-    
-    fut_runners = runners
-    fut_runners.crse_name.replace('Epsom', 'Epsom Downs', inplace=True)
-    fut_crses = fut_runners.drop_duplicates(subset='crse_name').drop(columns=['race_id', 'horse_id', 'horse_name']).reset_index(drop=True)
-    fut_crses['adj_crse_name'] = fut_crses.crse_name.replace(' ', '-', regex=True)
-    fut_crses['date'] = fut_crses.race_datetime.dt.date
-
-    # scrape
-    if len(fut_crses) > 0 :
-        crses = fut_crses.reset_index(drop=True)
-        for j in crses.index :
-            driver.close()
-            driver = webdriver.Chrome(options=op)
-            first = True
-            crse_races = fut_runners[fut_runners.crse_name == crses.crse_name[j]].drop_duplicates(subset='race_id').reset_index(drop=True)
-            for k in crse_races.index :
-                horse_grid = pd.DataFrame(columns=horse_columns)
-                
-                url = base_url + crses.adj_crse_name[j] + '/' + crses.date[j].strftime(format='%d-%B-%Y') + '/' + crse_races.race_datetime[k].strftime(format='%H%M')
-                print(url)
-                driver.get(url)
-                
-                if first :
-                    driver.maximize_window()
-                    driver.find_element_by_xpath('//*/div[1]/div/div/div[2]/div/button[2]').click()
-                    driver.find_element_by_xpath('//*/div[4]/div[1]/aside/div/ul/li[1]/label').click()
-                    driver.find_element_by_xpath('//*/div[4]/div[1]/aside/div/ul/li[3]/label').click()
-                    first = False
-                
-                # get horse names (may not be in order)
-                try:
-                    try :
-                        horse_grid=pd.DataFrame(columns = ['crse_name', 'race_datetime', 'horse_name'])
-                        for horse in driver.find_elements_by_class_name('odds-grid-horse__name'):
-                            res = horse.text
-                            horse_odds = {'crse_name':crse_races.crse_name[k],
-                                      'race_datetime':crse_races.race_datetime[k],
-                                      'horse_name':res}
-                            horse_grid = horse_grid.append(horse_odds, ignore_index=True)
-                            #print(res)
-                    except Exception:
-                        driver.get(url)
-                        horse_grid=pd.DataFrame(columns = ['crse_name', 'race_datetime', 'horse_name'])
-                        for horse in driver.find_elements_by_class_name('odds-grid-horse__name'):
-                            res = horse.text
-                            horse_odds = {'crse_name':crse_races.crse_name[k],
-                                      'race_datetime':crse_races.race_datetime[k],
-                                      'horse_name':res}
-                            horse_grid = horse_grid.append(horse_odds, ignore_index=True)
-                            #print(res)
-                except Exception:
-                    driver.get(url)
-                    horse_grid=pd.DataFrame(columns = ['crse_name', 'race_datetime', 'horse_name'])
-                    for horse in driver.find_elements_by_class_name('odds-grid-horse__name'):
-                        res = horse.text
-                        horse_odds = {'crse_name':crse_races.crse_name[k],
-                                  'race_datetime':crse_races.race_datetime[k],
-                                  'horse_name':res}
-                        horse_grid = horse_grid.append(horse_odds, ignore_index=True)
-                        #print(res)
-                
-                # get odds
-                try:
-                    try :
-                        race_odds = pd.DataFrame(columns=['odds'])
-                        for bookie in driver.find_elements_by_class_name('odds-grid__cell--odds') :
-                            res = bookie.text
-                            odds = {'odds' : res}
-                            race_odds = race_odds.append(odds, ignore_index=True)
-                            #print(res)
-                    except Exception:
-                        driver.get(url)
-                        race_odds = pd.DataFrame(columns=['odds'])
-                        for bookie in driver.find_elements_by_class_name('odds-grid__cell--odds') :
-                            res = bookie.text
-                            odds = {'odds' : res}
-                            race_odds = race_odds.append(odds, ignore_index=True)
-                            #print(res)
-                except Exception:
-                    driver.get(url)
-                    race_odds = pd.DataFrame(columns=['odds'])
-                    for bookie in driver.find_elements_by_class_name('odds-grid__cell--odds') :
-                        res = bookie.text
-                        odds = {'odds' : res}
-                        race_odds = race_odds.append(odds, ignore_index=True)
-                        #print(res)
-                
-                # clean odds and add to odds grid
-                race_odds.odds.replace(to_replace='-',value = np.nan, inplace=True)
-                race_odds.odds.replace(to_replace='odds',value = np.nan, inplace=True)
-                race_odds.odds.replace(to_replace='N/A',value = np.nan, inplace=True)
-                race_odds.odds.replace(to_replace='SP',value = np.nan, inplace=True)
-                race_odds['odds'] = pd.to_numeric(race_odds.odds)
-                
-                left_grid = pd.DataFrame(race_odds[race_odds.index < (len(horse_grid)*len(left_books))])
-                left_grid = pd.DataFrame(np.reshape(left_grid.values, (len(horse_grid),len(left_books))))
-                left_grid.columns = left_books
-                
-                right_grid = pd.DataFrame(race_odds[race_odds.index >= (len(horse_grid)*len(left_books))])
-                right_grid = pd.DataFrame(np.reshape(right_grid.values, (len(horse_grid),len(right_books))))
-                right_grid.columns = right_books
-                
-                race_grid = pd.DataFrame()
-                race_grid[horse_columns] = horse_grid
-                race_grid[left_books] = left_grid
-                race_grid[right_books] = right_grid
-                
-                odds_grid = odds_grid.append(race_grid, ignore_index=True)
-                
-        odds_grid['med_odds'] = odds_grid.median(axis = 1)
-        odds_grid.crse_name.replace('Epsom Downs', 'Epsom', inplace=True)
-    
-    driver.close()
-    
-    return odds_grid
-
 def atr_180min(runners) :
     runners = runners[((runners.race_datetime - pd.DateOffset(minutes=180)) < (pd.Timestamp.now() + pd.DateOffset(minutes=0.75))) & ((runners.race_datetime - pd.DateOffset(minutes=180)) > (pd.Timestamp.now() - pd.DateOffset(minutes=0.75)))]
     if len(runners) > 0 :
-        odds_grid = atr_gen(runners)
+        odds_grid = gen_atr(runners)
         odds_grid['scrape'] = '180 min'
         odds_grid['timestamp'] = pd.Timestamp.now()
         feather.write_feather(odds_grid, '../output/' + pd.Timestamp.now().strftime('%Y-%m-%d') + '_atr_180_odds' + pd.Timestamp.now().strftime('%d-%H-%M') + '.ftr')
@@ -518,7 +256,7 @@ def atr_180min(runners) :
 def atr_120min(runners) :
     runners = runners[((runners.race_datetime - pd.DateOffset(minutes=120)) < (pd.Timestamp.now() + pd.DateOffset(minutes=0.75))) & ((runners.race_datetime - pd.DateOffset(minutes=120)) > (pd.Timestamp.now() - pd.DateOffset(minutes=0.75)))]
     if len(runners) > 0 :
-        odds_grid = atr_gen(runners)
+        odds_grid = gen_atr(runners)
         odds_grid['scrape'] = '120 min'
         odds_grid['timestamp'] = pd.Timestamp.now()
         feather.write_feather(odds_grid, '../output/' + pd.Timestamp.now().strftime('%Y-%m-%d') + '_atr_120_odds' + pd.Timestamp.now().strftime('%d-%H-%M') + '.ftr')
@@ -531,7 +269,7 @@ def atr_120min(runners) :
 def atr_090min(runners) :
     runners = runners[((runners.race_datetime - pd.DateOffset(minutes=90)) < (pd.Timestamp.now() + pd.DateOffset(minutes=0.75))) & ((runners.race_datetime - pd.DateOffset(minutes=90)) > (pd.Timestamp.now() - pd.DateOffset(minutes=0.75)))]
     if len(runners) > 0 :
-        odds_grid = atr_gen(runners)
+        odds_grid = gen_atr(runners)
         odds_grid['scrape'] = '90 min'
         odds_grid['timestamp'] = pd.Timestamp.now()
         feather.write_feather(odds_grid, '../output/' + pd.Timestamp.now().strftime('%Y-%m-%d') + '_atr_090_odds' + pd.Timestamp.now().strftime('%d-%H-%M') + '.ftr')
@@ -544,7 +282,7 @@ def atr_090min(runners) :
 def atr_060min(runners) :
     runners = runners[((runners.race_datetime - pd.DateOffset(minutes=60)) < (pd.Timestamp.now() + pd.DateOffset(minutes=0.75))) & ((runners.race_datetime - pd.DateOffset(minutes=60)) > (pd.Timestamp.now() - pd.DateOffset(minutes=0.75)))]
     if len(runners) > 0 :
-        odds_grid = atr_gen(runners)
+        odds_grid = gen_atr(runners)
         odds_grid['scrape'] = '60 min'
         odds_grid['timestamp'] = pd.Timestamp.now()
         feather.write_feather(odds_grid, '../output/' + pd.Timestamp.now().strftime('%Y-%m-%d') + '_atr_060_odds' + pd.Timestamp.now().strftime('%d-%H-%M') + '.ftr')
@@ -557,7 +295,7 @@ def atr_060min(runners) :
 def atr_030min(runners) :
     runners = runners[((runners.race_datetime - pd.DateOffset(minutes=30)) < (pd.Timestamp.now() + pd.DateOffset(minutes=0.75))) & ((runners.race_datetime - pd.DateOffset(minutes=30)) > (pd.Timestamp.now() - pd.DateOffset(minutes=0.75)))]
     if len(runners) > 0 :
-        odds_grid = atr_gen(runners)
+        odds_grid = gen_atr(runners)
         odds_grid['scrape'] = '30 min'
         odds_grid['timestamp'] = pd.Timestamp.now()
         feather.write_feather(odds_grid, '../output/' + pd.Timestamp.now().strftime('%Y-%m-%d') + '_atr_030_odds' + pd.Timestamp.now().strftime('%d-%H-%M') + '.ftr')
@@ -570,7 +308,7 @@ def atr_030min(runners) :
 def atr_020min(runners) :
     runners = runners[((runners.race_datetime - pd.DateOffset(minutes=20)) < (pd.Timestamp.now() + pd.DateOffset(minutes=0.75))) & ((runners.race_datetime - pd.DateOffset(minutes=20)) > (pd.Timestamp.now() - pd.DateOffset(minutes=0.75)))]
     if len(runners) > 0 :
-        odds_grid = atr_gen(runners)
+        odds_grid = gen_atr(runners)
         odds_grid['scrape'] = '20 min'
         odds_grid['timestamp'] = pd.Timestamp.now()
         feather.write_feather(odds_grid, '../output/' + pd.Timestamp.now().strftime('%Y-%m-%d') + '_atr_020_odds' + pd.Timestamp.now().strftime('%d-%H-%M') + '.ftr')
@@ -583,7 +321,7 @@ def atr_020min(runners) :
 def atr_010min(runners) :
     runners = runners[((runners.race_datetime - pd.DateOffset(minutes=10)) < (pd.Timestamp.now() + pd.DateOffset(minutes=0.75))) & ((runners.race_datetime - pd.DateOffset(minutes=10)) > (pd.Timestamp.now() - pd.DateOffset(minutes=0.75)))]
     if len(runners) > 0 :
-        odds_grid = atr_gen(runners)
+        odds_grid = gen_atr(runners)
         odds_grid['scrape'] = '10 min'
         odds_grid['timestamp'] = pd.Timestamp.now()
         feather.write_feather(odds_grid, '../output/' + pd.Timestamp.now().strftime('%Y-%m-%d') + '_atr_010_odds' + pd.Timestamp.now().strftime('%d-%H-%M') + '.ftr')
@@ -596,7 +334,7 @@ def atr_010min(runners) :
 def atr_005min(runners) :
     runners = runners[((runners.race_datetime - pd.DateOffset(minutes=5)) < (pd.Timestamp.now() + pd.DateOffset(minutes=0.75))) & ((runners.race_datetime - pd.DateOffset(minutes=5)) > (pd.Timestamp.now() - pd.DateOffset(minutes=0.75)))]
     if len(runners) > 0 :
-        odds_grid = atr_gen(runners)
+        odds_grid = gen_atr(runners)
         odds_grid['scrape'] = '5 min'
         odds_grid['timestamp'] = pd.Timestamp.now()
         feather.write_feather(odds_grid, '../output/' + pd.Timestamp.now().strftime('%Y-%m-%d') + '_atr_005_odds' + pd.Timestamp.now().strftime('%d-%H-%M') + '.ftr')
@@ -611,7 +349,6 @@ import pyodbc
 import pandas as pd
 import numpy as np
 from selenium import webdriver
-from selenium.common.exceptions import StaleElementReferenceException
 import pyarrow.feather as feather
 import schedule
 import time
