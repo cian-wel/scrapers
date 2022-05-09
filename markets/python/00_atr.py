@@ -60,6 +60,26 @@ def proform_import() :
     
     return runners
 
+def get_horses(driver, crse_races, k) :
+    horse_grid=pd.DataFrame(columns = ['crse_name', 'race_datetime', 'horse_name'])
+    for horse in driver.find_elements_by_class_name('odds-grid-horse__name'):
+        res = horse.text
+        horse_odds = {'crse_name':crse_races.crse_name[k],
+                  'race_datetime':crse_races.race_datetime[k],
+                  'horse_name':res}
+        horse_grid = horse_grid.append(horse_odds, ignore_index=True)
+        
+    return horse_grid
+
+def get_odds(driver, crse_races) :
+    race_odds = pd.DataFrame(columns=['odds'])
+    for bookie in driver.find_elements_by_class_name('odds-grid__cell--odds') :
+        res = bookie.text
+        odds = {'odds' : res}
+        race_odds = race_odds.append(odds, ignore_index=True)
+        
+    return race_odds
+
 def gen_atr(fut_runners) :
     
     base_url = 'https://www.attheraces.com/racecard/'
@@ -113,60 +133,24 @@ def gen_atr(fut_runners) :
             # get horse names (may not be in order)
             try:
                 try :
-                    horse_grid=pd.DataFrame(columns = ['crse_name', 'race_datetime', 'horse_name'])
-                    for horse in driver.find_elements_by_class_name('odds-grid-horse__name'):
-                        res = horse.text
-                        horse_odds = {'crse_name':crse_races.crse_name[k],
-                                  'race_datetime':crse_races.race_datetime[k],
-                                  'horse_name':res}
-                        horse_grid = horse_grid.append(horse_odds, ignore_index=True)
-                        #print(res)
+                    horse_grid = get_horses(driver, crse_races, k)
                 except Exception:
                     driver.get(url)
-                    horse_grid=pd.DataFrame(columns = ['crse_name', 'race_datetime', 'horse_name'])
-                    for horse in driver.find_elements_by_class_name('odds-grid-horse__name'):
-                        res = horse.text
-                        horse_odds = {'crse_name':crse_races.crse_name[k],
-                                  'race_datetime':crse_races.race_datetime[k],
-                                  'horse_name':res}
-                        horse_grid = horse_grid.append(horse_odds, ignore_index=True)
-                        #print(res)
+                    horse_grid = get_horses(driver, crse_races, k)
             except Exception:
                 driver.get(url)
-                horse_grid=pd.DataFrame(columns = ['crse_name', 'race_datetime', 'horse_name'])
-                for horse in driver.find_elements_by_class_name('odds-grid-horse__name'):
-                    res = horse.text
-                    horse_odds = {'crse_name':crse_races.crse_name[k],
-                              'race_datetime':crse_races.race_datetime[k],
-                              'horse_name':res}
-                    horse_grid = horse_grid.append(horse_odds, ignore_index=True)
-                    #print(res)
+                horse_grid = get_horses(driver, crse_races, k)
             
             # get odds
             try:
                 try :
-                    race_odds = pd.DataFrame(columns=['odds'])
-                    for bookie in driver.find_elements_by_class_name('odds-grid__cell--odds') :
-                        res = bookie.text
-                        odds = {'odds' : res}
-                        race_odds = race_odds.append(odds, ignore_index=True)
-                        #print(res)
+                    race_odds = get_odds(driver, crse_races)
                 except Exception:
                     driver.get(url)
-                    race_odds = pd.DataFrame(columns=['odds'])
-                    for bookie in driver.find_elements_by_class_name('odds-grid__cell--odds') :
-                        res = bookie.text
-                        odds = {'odds' : res}
-                        race_odds = race_odds.append(odds, ignore_index=True)
-                        #print(res)
+                    race_odds = get_odds(driver, crse_races)
             except Exception:
                 driver.get(url)
-                race_odds = pd.DataFrame(columns=['odds'])
-                for bookie in driver.find_elements_by_class_name('odds-grid__cell--odds') :
-                    res = bookie.text
-                    odds = {'odds' : res}
-                    race_odds = race_odds.append(odds, ignore_index=True)
-                    #print(res)
+                race_odds = get_odds(driver, crse_races)
             
             # clean odds and add to odds grid
             race_odds.odds.replace(to_replace='-',value = np.nan, inplace=True)
@@ -222,7 +206,7 @@ def atr_today() :
 #%% scrape tomorrow
 def atr_tomorrow() :
     
-    date = pd.Timestamp.now() + pd.DateOffset(days=1)
+    date = pd.Timestamp.now().normalize() + pd.DateOffset(days=1)
     runners = proform_import()
     fut_runners = runners
     fut_runners = runners[(runners.race_datetime > date) & (runners.race_datetime < (date.normalize() + pd.DateOffset(days=1)))]
