@@ -80,11 +80,70 @@ def get_odds(driver, crse_races) :
         
     return race_odds
 
+def atr_first(driver) :
+    driver.maximize_window()
+    time.sleep(10)
+    driver.find_element_by_xpath("//button[text()='AGREE']").click()
+    driver.find_element_by_xpath('//*/div[4]/div[1]/aside/div/ul/li[1]/label').click()
+    driver.find_element_by_xpath('//*/div[4]/div[1]/aside/div/ul/li[3]/label').click()
+    
+    return driver
+
+def get_horses_odds(driver, crse_races, k, horse_grid, url) :
+    try:
+        try :
+            horse_grid = get_horses(driver, crse_races, k)
+        except Exception:
+            driver.get(url)
+            horse_grid = get_horses(driver, crse_races, k)
+    except Exception:
+        driver.get(url)
+        horse_grid = get_horses(driver, crse_races, k)
+    
+    # get odds
+    try:
+        try :
+            race_odds = get_odds(driver, crse_races)
+        except Exception:
+            driver.get(url)
+            race_odds = get_odds(driver, crse_races)
+    except Exception:
+        driver.get(url)
+        race_odds = get_odds(driver, crse_races)
+    
+    return race_odds, horse_grid
+
+def odds_grid_shape(race_odds, horse_grid, race_grid, left_books, right_books, horse_columns, odds_grid) :
+    
+    # clean odds and add to odds grid
+    race_odds.odds.replace(to_replace='-',value = np.nan, inplace=True)
+    race_odds.odds.replace(to_replace='odds',value = np.nan, inplace=True)
+    race_odds.odds.replace(to_replace='N/A',value = np.nan, inplace=True)
+    race_odds.odds.replace(to_replace='SP',value = np.nan, inplace=True)
+    race_odds['odds'] = pd.to_numeric(race_odds.odds)
+    
+    left_grid = pd.DataFrame(race_odds[race_odds.index < (len(horse_grid)*len(left_books))])
+    left_grid = pd.DataFrame(np.reshape(left_grid.values, (len(horse_grid),len(left_books))))
+    left_grid.columns = left_books
+    
+    right_grid = pd.DataFrame(race_odds[race_odds.index >= (len(horse_grid)*len(left_books))])
+    right_grid = pd.DataFrame(np.reshape(right_grid.values, (len(horse_grid),len(right_books))))
+    right_grid.columns = right_books
+    
+    race_grid = pd.DataFrame()
+    race_grid[horse_columns] = horse_grid
+    race_grid[left_books] = left_grid
+    race_grid[right_books] = right_grid
+    
+    odds_grid = odds_grid.append(race_grid, ignore_index=True)
+    
+    return odds_grid
+
 def gen_atr(fut_runners) :
     
     base_url = 'https://www.attheraces.com/racecard/'
     left_books = ['bet365', 'will_hill', 'lads', 'pp', 'coral', 'unibet', 'sport888', 'betfairsb', 'sts', 'tote']
-    right_books = ['betfred', 'betvictor', 'boylesports', 'sportnation', 'parimatch', 'betway', 'fansbet', 'grosvenor', 'spreadex', 'skybet', 'quinnbet', 'matchbook', 'smarkets', 'bfex']
+    right_books = ['betfred', 'betvictor', 'boylesports', 'parimatch', 'betway', 'fansbet', 'grosvenor', 'spreadex', 'skybet', 'quinnbet', 'matchbook', 'smarkets', 'bfex']
 
     horse_columns = ['crse_name', 'race_datetime', 'horse_name']
     grid_columns = []
@@ -121,58 +180,23 @@ def gen_atr(fut_runners) :
             
             url = base_url + crses.adj_crse_name[j] + '/' + crses.date[j].strftime(format='%d-%B-%Y') + '/' + crse_races.race_datetime[k].strftime(format='%H%M')
             print(url)
-            driver.get(url)
+            try :
+                driver.get(url)
+            except Exception :
+                driver.get(url)
             
             if first :
-                driver.maximize_window()
-                driver.find_element_by_xpath('//*/div[1]/div/div/div[2]/div/button[2]').click()
-                driver.find_element_by_xpath('//*/div[4]/div[1]/aside/div/ul/li[1]/label').click()
-                driver.find_element_by_xpath('//*/div[4]/div[1]/aside/div/ul/li[3]/label').click()
+                try :
+                    atr_first(driver)
+                except Exception :
+                    atr_first(driver)
                 first = False
-            
-            # get horse names (may not be in order)
-            try:
-                try :
-                    horse_grid = get_horses(driver, crse_races, k)
-                except Exception:
-                    driver.get(url)
-                    horse_grid = get_horses(driver, crse_races, k)
-            except Exception:
-                driver.get(url)
-                horse_grid = get_horses(driver, crse_races, k)
-            
-            # get odds
-            try:
-                try :
-                    race_odds = get_odds(driver, crse_races)
-                except Exception:
-                    driver.get(url)
-                    race_odds = get_odds(driver, crse_races)
-            except Exception:
-                driver.get(url)
-                race_odds = get_odds(driver, crse_races)
-            
-            # clean odds and add to odds grid
-            race_odds.odds.replace(to_replace='-',value = np.nan, inplace=True)
-            race_odds.odds.replace(to_replace='odds',value = np.nan, inplace=True)
-            race_odds.odds.replace(to_replace='N/A',value = np.nan, inplace=True)
-            race_odds.odds.replace(to_replace='SP',value = np.nan, inplace=True)
-            race_odds['odds'] = pd.to_numeric(race_odds.odds)
-            
-            left_grid = pd.DataFrame(race_odds[race_odds.index < (len(horse_grid)*len(left_books))])
-            left_grid = pd.DataFrame(np.reshape(left_grid.values, (len(horse_grid),len(left_books))))
-            left_grid.columns = left_books
-            
-            right_grid = pd.DataFrame(race_odds[race_odds.index >= (len(horse_grid)*len(left_books))])
-            right_grid = pd.DataFrame(np.reshape(right_grid.values, (len(horse_grid),len(right_books))))
-            right_grid.columns = right_books
-            
-            race_grid = pd.DataFrame()
-            race_grid[horse_columns] = horse_grid
-            race_grid[left_books] = left_grid
-            race_grid[right_books] = right_grid
-            
-            odds_grid = odds_grid.append(race_grid, ignore_index=True)
+            try :
+                race_odds, horse_grid = get_horses_odds(driver, crse_races, k, horse_grid, url)
+                odds_grid = odds_grid_shape(race_odds, horse_grid, race_grid, left_books, right_books, horse_columns, odds_grid)
+            except :
+                race_odds, horse_grid = get_horses_odds(driver, crse_races, k, horse_grid, url)
+                odds_grid = odds_grid_shape(race_odds, horse_grid, race_grid, left_books, right_books, horse_columns, odds_grid)
                 
     odds_grid['med_odds'] = odds_grid.median(axis = 1)
     odds_grid.crse_name.replace('Epsom Downs', 'Epsom', inplace=True)
@@ -225,7 +249,7 @@ def atr_tomorrow() :
     return
 
 def atr_180min(runners) :
-    runners = runners[((runners.race_datetime - pd.DateOffset(minutes=180)) < (pd.Timestamp.now() + pd.DateOffset(minutes=0.75))) & ((runners.race_datetime - pd.DateOffset(minutes=180)) > (pd.Timestamp.now() - pd.DateOffset(minutes=0.75)))]
+    runners = runners[((runners.race_datetime - pd.DateOffset(minutes=180)) < (pd.Timestamp.now() + pd.DateOffset(minutes=1))) & ((runners.race_datetime - pd.DateOffset(minutes=180)) > (pd.Timestamp.now() - pd.DateOffset(minutes=1)))]
     if len(runners) > 0 :
         odds_grid = gen_atr(runners)
         odds_grid['scrape'] = '180 min'
@@ -238,7 +262,7 @@ def atr_180min(runners) :
     return
 
 def atr_120min(runners) :
-    runners = runners[((runners.race_datetime - pd.DateOffset(minutes=120)) < (pd.Timestamp.now() + pd.DateOffset(minutes=0.75))) & ((runners.race_datetime - pd.DateOffset(minutes=120)) > (pd.Timestamp.now() - pd.DateOffset(minutes=0.75)))]
+    runners = runners[((runners.race_datetime - pd.DateOffset(minutes=120)) < (pd.Timestamp.now() + pd.DateOffset(minutes=1))) & ((runners.race_datetime - pd.DateOffset(minutes=120)) > (pd.Timestamp.now() - pd.DateOffset(minutes=1)))]
     if len(runners) > 0 :
         odds_grid = gen_atr(runners)
         odds_grid['scrape'] = '120 min'
@@ -251,7 +275,7 @@ def atr_120min(runners) :
     return
 
 def atr_090min(runners) :
-    runners = runners[((runners.race_datetime - pd.DateOffset(minutes=90)) < (pd.Timestamp.now() + pd.DateOffset(minutes=0.75))) & ((runners.race_datetime - pd.DateOffset(minutes=90)) > (pd.Timestamp.now() - pd.DateOffset(minutes=0.75)))]
+    runners = runners[((runners.race_datetime - pd.DateOffset(minutes=90)) < (pd.Timestamp.now() + pd.DateOffset(minutes=1))) & ((runners.race_datetime - pd.DateOffset(minutes=90)) > (pd.Timestamp.now() - pd.DateOffset(minutes=1)))]
     if len(runners) > 0 :
         odds_grid = gen_atr(runners)
         odds_grid['scrape'] = '90 min'
@@ -264,7 +288,7 @@ def atr_090min(runners) :
     return
 
 def atr_060min(runners) :
-    runners = runners[((runners.race_datetime - pd.DateOffset(minutes=60)) < (pd.Timestamp.now() + pd.DateOffset(minutes=0.75))) & ((runners.race_datetime - pd.DateOffset(minutes=60)) > (pd.Timestamp.now() - pd.DateOffset(minutes=0.75)))]
+    runners = runners[((runners.race_datetime - pd.DateOffset(minutes=60)) < (pd.Timestamp.now() + pd.DateOffset(minutes=1))) & ((runners.race_datetime - pd.DateOffset(minutes=60)) > (pd.Timestamp.now() - pd.DateOffset(minutes=1)))]
     if len(runners) > 0 :
         odds_grid = gen_atr(runners)
         odds_grid['scrape'] = '60 min'
@@ -277,7 +301,7 @@ def atr_060min(runners) :
     return
 
 def atr_030min(runners) :
-    runners = runners[((runners.race_datetime - pd.DateOffset(minutes=30)) < (pd.Timestamp.now() + pd.DateOffset(minutes=0.75))) & ((runners.race_datetime - pd.DateOffset(minutes=30)) > (pd.Timestamp.now() - pd.DateOffset(minutes=0.75)))]
+    runners = runners[((runners.race_datetime - pd.DateOffset(minutes=30)) < (pd.Timestamp.now() + pd.DateOffset(minutes=1))) & ((runners.race_datetime - pd.DateOffset(minutes=30)) > (pd.Timestamp.now() - pd.DateOffset(minutes=1)))]
     if len(runners) > 0 :
         odds_grid = gen_atr(runners)
         odds_grid['scrape'] = '30 min'
@@ -290,7 +314,7 @@ def atr_030min(runners) :
     return
 
 def atr_020min(runners) :
-    runners = runners[((runners.race_datetime - pd.DateOffset(minutes=20)) < (pd.Timestamp.now() + pd.DateOffset(minutes=0.75))) & ((runners.race_datetime - pd.DateOffset(minutes=20)) > (pd.Timestamp.now() - pd.DateOffset(minutes=0.75)))]
+    runners = runners[((runners.race_datetime - pd.DateOffset(minutes=20)) < (pd.Timestamp.now() + pd.DateOffset(minutes=1))) & ((runners.race_datetime - pd.DateOffset(minutes=20)) > (pd.Timestamp.now() - pd.DateOffset(minutes=1)))]
     if len(runners) > 0 :
         odds_grid = gen_atr(runners)
         odds_grid['scrape'] = '20 min'
@@ -303,7 +327,7 @@ def atr_020min(runners) :
     return
 
 def atr_010min(runners) :
-    runners = runners[((runners.race_datetime - pd.DateOffset(minutes=10)) < (pd.Timestamp.now() + pd.DateOffset(minutes=0.75))) & ((runners.race_datetime - pd.DateOffset(minutes=10)) > (pd.Timestamp.now() - pd.DateOffset(minutes=0.75)))]
+    runners = runners[((runners.race_datetime - pd.DateOffset(minutes=10)) < (pd.Timestamp.now() + pd.DateOffset(minutes=1))) & ((runners.race_datetime - pd.DateOffset(minutes=10)) > (pd.Timestamp.now() - pd.DateOffset(minutes=1)))]
     if len(runners) > 0 :
         odds_grid = gen_atr(runners)
         odds_grid['scrape'] = '10 min'
@@ -316,7 +340,7 @@ def atr_010min(runners) :
     return
 
 def atr_005min(runners) :
-    runners = runners[((runners.race_datetime - pd.DateOffset(minutes=5)) < (pd.Timestamp.now() + pd.DateOffset(minutes=0.75))) & ((runners.race_datetime - pd.DateOffset(minutes=5)) > (pd.Timestamp.now() - pd.DateOffset(minutes=0.75)))]
+    runners = runners[((runners.race_datetime - pd.DateOffset(minutes=5)) < (pd.Timestamp.now() + pd.DateOffset(minutes=1))) & ((runners.race_datetime - pd.DateOffset(minutes=5)) > (pd.Timestamp.now() - pd.DateOffset(minutes=1)))]
     if len(runners) > 0 :
         odds_grid = gen_atr(runners)
         odds_grid['scrape'] = '5 min'
@@ -341,6 +365,8 @@ import warnings
 warnings.filterwarnings("ignore") 
 
 schedule.clear()
+
+atr_today()
 
 schedule.every().day.at("07:30").do(atr_today)
 schedule.every().day.at("08:00").do(atr_today)
@@ -379,4 +405,4 @@ while True :
     atr_005min(runners)
     schedule.run_pending()
     if ~sched_ran :
-        time.sleep(60)
+        time.sleep(45)
