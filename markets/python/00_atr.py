@@ -9,6 +9,9 @@ Created on Sun Apr 17 21:05:49 2022
 this file scrapes price data from atr for today's races
 
 """
+#%% todo
+# log exceptions
+
 
 #%% proform function
 def proform_import() :
@@ -382,6 +385,8 @@ import pyarrow.feather as feather
 import schedule
 import time
 from fake_useragent import UserAgent
+import smtplib
+from email.message import EmailMessage
 import warnings 
 warnings.filterwarnings("ignore") 
 
@@ -406,10 +411,46 @@ schedule.every().day.at("20:00").do(atr_tomorrow)
 schedule.every().day.at("21:00").do(atr_tomorrow)
 schedule.every().day.at("23:00").do(atr_tomorrow)
 
+i = 0
+
+msg = EmailMessage()
+msg.set_content('scraper re-started')
+msg['Subject'] = 'ATR scraper'
+msg['From'] = 'scwapers@gmail.com'
+msg['To'] = 'scwapers@gmail.com'
+
+server = smtplib.SMTP('smtp.gmail.com',587) #port 465 or 587
+server.ehlo()
+server.starttls()
+server.ehlo()
+server.login('scwapers@gmail.com','NU9tpKimbc2ThNH')
+server.send_message(msg)
+server.close()
+
 while True :
+    
     try :
         main(schedule)
-    except :
-        time.sleep(30)
+        i = 0
+        
+    except Exception as e:
+        i = i+1
+        if i > 3 :
+            msg = EmailMessage()
+            msg.set_content('Scraper stopped 3 consecutive times with exception' + str(e))
+            msg['Subject'] = '**URGENT** ATR SCRAPER STOPPED'
+            msg['From'] = 'scwapers@gmail.com'
+            msg['To'] = 'scwapers@gmail.com'
+            
+            server = smtplib.SMTP('smtp.gmail.com',587) #port 465 or 587
+            server.ehlo()
+            server.starttls()
+            server.ehlo()
+            server.login('scwapers@gmail.com','NU9tpKimbc2ThNH')
+            server.send_message(msg)
+            server.close()
+            time.sleep(30)
+            
+            break
         pass
     
