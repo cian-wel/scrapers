@@ -80,10 +80,10 @@ def get_odds(driver, crse_races) :
         
     return race_odds
 
-def atr_first(driver) :
+def atr_first(driver, slp) :
     driver.maximize_window()
-    time.sleep(10)
-    driver.find_element_by_xpath("//button[text()='AGREE']").click()
+    time.sleep(slp)
+    driver.find_element_by_xpath("//button/span[text()='AGREE']").click()
     driver.find_element_by_xpath('//*/div[4]/div[1]/aside/div/ul/li[1]/label').click()
     driver.find_element_by_xpath('//*/div[4]/div[1]/aside/div/ul/li[3]/label').click()
     
@@ -182,14 +182,11 @@ def gen_atr(fut_runners) :
             print(url)
             try :
                 driver.get(url)
-            except Exception :
+            except :
                 driver.get(url)
             
             if first :
-                try :
-                    atr_first(driver)
-                except Exception :
-                    atr_first(driver)
+                atr_first(driver, 5)
                 first = False
             try :
                 race_odds, horse_grid = get_horses_odds(driver, crse_races, k, horse_grid, url)
@@ -205,7 +202,6 @@ def gen_atr(fut_runners) :
     
     return odds_grid
     
-
 #%% today function
 def atr_today() :
     
@@ -352,6 +348,31 @@ def atr_005min(runners) :
         
     return
 
+def main(schedule) :
+    runners = proform_import()
+
+    while True :
+        
+        sched_ran = False
+        
+        if runners.race_datetime.dt.date.min() < pd.Timestamp.now().normalize() :
+            runners = proform_import()
+        
+        atr_180min(runners)
+        atr_120min(runners)
+        atr_090min(runners)
+        atr_060min(runners)
+        atr_030min(runners)
+        atr_020min(runners)
+        atr_010min(runners)
+        atr_005min(runners)
+        schedule.run_pending()
+        if ~sched_ran :
+            time.sleep(45)
+    
+    return
+    
+
 #%% body ==================================================
 import pyodbc
 import pandas as pd
@@ -366,8 +387,6 @@ warnings.filterwarnings("ignore")
 
 schedule.clear()
 
-atr_today()
-
 schedule.every().day.at("07:30").do(atr_today)
 schedule.every().day.at("08:00").do(atr_today)
 schedule.every().day.at("08:30").do(atr_today)
@@ -375,6 +394,7 @@ schedule.every().day.at("09:00").do(atr_today)
 schedule.every().day.at("09:30").do(atr_today)
 schedule.every().day.at("10:00").do(atr_today)
 schedule.every().day.at("10:30").do(atr_today)
+
 schedule.every().day.at("11:00").do(atr_today)
 schedule.every().day.at("11:30").do(atr_today)
 schedule.every().day.at("12:00").do(atr_today)
@@ -386,23 +406,10 @@ schedule.every().day.at("20:00").do(atr_tomorrow)
 schedule.every().day.at("21:00").do(atr_tomorrow)
 schedule.every().day.at("23:00").do(atr_tomorrow)
 
-runners = proform_import()
-
 while True :
+    try :
+        main(schedule)
+    except :
+        time.sleep(30)
+        pass
     
-    sched_ran = False
-    
-    if runners.race_datetime.dt.date.min() < pd.Timestamp.now().normalize() :
-        runners = proform_import()
-    
-    atr_180min(runners)
-    atr_120min(runners)
-    atr_090min(runners)
-    atr_060min(runners)
-    atr_030min(runners)
-    atr_020min(runners)
-    atr_010min(runners)
-    atr_005min(runners)
-    schedule.run_pending()
-    if ~sched_ran :
-        time.sleep(45)
