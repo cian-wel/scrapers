@@ -86,8 +86,12 @@ def get_odds(driver, crse_races) :
 def atr_first(driver, slp) :
     driver.maximize_window()
     time.sleep(slp)
-    driver.find_element_by_xpath("//button/span[text()='AGREE']").click()
-    driver.find_element_by_xpath('//*/div[4]/div[1]/aside/div/ul/li[1]/label').click()
+    try :
+        driver.find_element_by_xpath("//span[text()='AGREE']").click()
+    except :
+        pass
+    #driver.find_element_by_xpath('//*/div[4]/div[1]/aside/div/ul/li[1]/label').click()
+    driver.find_element_by_xpath("//label[text()='Show all runners in odds grid']").click()
     driver.find_element_by_xpath('//*/div[4]/div[1]/aside/div/ul/li[3]/label').click()
     
     return driver
@@ -123,6 +127,14 @@ def odds_grid_shape(race_odds, horse_grid, race_grid, left_books, right_books, h
     race_odds.odds.replace(to_replace='odds',value = np.nan, inplace=True)
     race_odds.odds.replace(to_replace='N/A',value = np.nan, inplace=True)
     race_odds.odds.replace(to_replace='SP',value = np.nan, inplace=True)
+    
+    for i in range(len(race_odds.odds)) :
+        if type(race_odds.odds[i]) == str :
+            if '/' in race_odds.odds[i] :
+                price = race_odds.odds[i].split('/')
+                price = (int(price[0]) / int(price[1])) + 1
+                race_odds.loc[i, 'odds'] = price
+                
     race_odds['odds'] = pd.to_numeric(race_odds.odds)
     
     left_grid = pd.DataFrame(race_odds[race_odds.index < (len(horse_grid)*len(left_books))])
@@ -146,7 +158,7 @@ def gen_atr(fut_runners) :
     
     base_url = 'https://www.attheraces.com/racecard/'
     left_books = ['bet365', 'will_hill', 'lads', 'pp', 'coral', 'unibet', 'sport888', 'betfairsb', 'sts', 'tote']
-    right_books = ['betfred', 'betvictor', 'boylesports', 'parimatch', 'betway', 'fansbet', 'grosvenor', 'spreadex', 'skybet', 'quinnbet', 'matchbook', 'smarkets', 'bfex']
+    right_books = ['betfred', 'betvictor', 'bet10', 'boylesports', 'parimatch', 'betway', 'fansbet', 'grosvenor', 'spreadex', 'skybet', 'quinnbet', 'matchbook', 'smarkets', 'bfex']
 
     horse_columns = ['crse_name', 'race_datetime', 'horse_name']
     grid_columns = []
@@ -202,6 +214,8 @@ def gen_atr(fut_runners) :
     odds_grid.crse_name.replace('Epsom Downs', 'Epsom', inplace=True)
     
     driver.close()
+    
+    globals()['i'] = 0
     
     return odds_grid
     
@@ -374,8 +388,7 @@ def main(schedule) :
             time.sleep(45)
     
     return
-    
-
+     
 #%% body ==================================================
 import pyodbc
 import pandas as pd
@@ -391,6 +404,8 @@ import warnings
 warnings.filterwarnings("ignore") 
 
 schedule.clear()
+
+atr_today()
 
 schedule.every().day.at("07:30").do(atr_today)
 schedule.every().day.at("08:00").do(atr_today)
@@ -411,19 +426,19 @@ schedule.every().day.at("20:00").do(atr_tomorrow)
 schedule.every().day.at("21:00").do(atr_tomorrow)
 schedule.every().day.at("23:00").do(atr_tomorrow)
 
-i = 0
+globals()['i'] = 0
 
 msg = EmailMessage()
 msg.set_content('scraper re-started')
 msg['Subject'] = 'ATR scraper'
-msg['From'] = 'scwapers@gmail.com'
+msg['From'] = 'weldonci@tcd.ie'
 msg['To'] = 'scwapers@gmail.com'
 
 server = smtplib.SMTP('smtp.gmail.com',587) #port 465 or 587
 server.ehlo()
 server.starttls()
 server.ehlo()
-server.login('scwapers@gmail.com','NU9tpKimbc2ThNH')
+server.login('weldonci@tcd.ie','o$o@74tS')
 server.send_message(msg)
 server.close()
 
@@ -431,26 +446,31 @@ while True :
     
     try :
         main(schedule)
-        i = 0
         
     except Exception as e:
-        i = i+1
-        if i > 3 :
-            msg = EmailMessage()
-            msg.set_content('Scraper stopped 3 consecutive times with exception' + str(e))
-            msg['Subject'] = '**URGENT** ATR SCRAPER STOPPED'
-            msg['From'] = 'scwapers@gmail.com'
-            msg['To'] = 'scwapers@gmail.com'
-            
-            server = smtplib.SMTP('smtp.gmail.com',587) #port 465 or 587
-            server.ehlo()
-            server.starttls()
-            server.ehlo()
-            server.login('scwapers@gmail.com','NU9tpKimbc2ThNH')
-            server.send_message(msg)
-            server.close()
+        globals()['i'] = globals()['i']+1
+        time.sleep(30)
+        if globals()['i'] >1 :
             time.sleep(30)
-            
-            break
+            if  globals()['i'] > 3 :
+                time.sleep(30)
+                if globals()['i'] > 10 :
+                    
+                    msg = EmailMessage()
+                    msg.set_content('Scraper stopped after ' + str(globals()['i']) + ' consecutive times with exception:\n' + str(e))
+                    msg['Subject'] = '**URGENT** ATR SCRAPER STOPPED'
+                    msg['From'] = 'weldonci@tcd.ie'
+                    msg['To'] = 'scwapers@gmail.com'
+                    
+                    server = smtplib.SMTP('smtp.gmail.com',587) #port 465 or 587
+                    server.ehlo()
+                    server.starttls()
+                    server.ehlo()
+                    server.login('weldonci@tcd.ie','o$o@74tS')
+                    server.send_message(msg)
+                    server.close()
+                
+                    break
+        print(globals()['i'])
         pass
     
